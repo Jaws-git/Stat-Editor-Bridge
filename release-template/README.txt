@@ -13,6 +13,7 @@ Added in version 3.5 : fix to the gecko loader, executable now available !
 
 Added in version 4.0 : added change up, pitching wind up, hitboxes, real speeds, star gains and star boosts
 Added in version 4.1 : added a patch note generator
+Added in version 4.2 : added a hitbox randomizer
 
 
 Either run the sluggers-stat-editor.exe, or you can find the source code in the "Source Code" folder

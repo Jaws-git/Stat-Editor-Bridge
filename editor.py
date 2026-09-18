@@ -75,12 +75,12 @@ statsList = ["pitching arm","batting arm","character class","???","weight",
              "charge power","bunting","speed","outfield throwing","fielding",
              "displayed pitching","displayed batting","displayed fielding",
              "dis speed","curveball speed","charge pitch speed","curve",
-             "NOT stamina","traj","hit curve","stamina","star pitch type"]
+             "curse ball","traj","hit curve","stamina","star pitch type"]
 trajAllList = ["Medium","High","Low","Group 3","Group 4","Group 5"]
 trajUsed = [1,1,1,0,0,0]
 trajList = ["Medium","High","Low"]
-sizeList = ["Gameplay","Select Screens","regular","facing away","???","height",
-            "???","???","dive","???","jump","???","width","height"]
+sizeList = ["Gameplay","Select Screens","regular","facing away","safer catch","height",
+            "reach up threshold","??? (height)","dive","line drive dive height","jump","??? (regular)","width","height"]
 speedList = ["Baserunning","Fielding"]
 teamList = ["Fireballs","Knights","Wilds","Monkeys","Monarchs","Flowers",
             "Eggs","Monsters","Muscles","Spitballs","Bows","Rookies"]
@@ -93,7 +93,7 @@ starEventsList = ["single","double","triple","ground rule double","???",
                  "strike","out (any)","???","???","???","???","???","???","???"]
 
 starBoostStatsList = ["displayed Pitching","curveball speed","fastball speed",
-                      "curve","??? (Pitch)","displayed batting","slap power",
+                      "curve","curse ball","displayed batting","slap power",
                       "charge power","slap contact","charge contact","bunting",
                       "displayed fielding","displayed speed","fielding","throwing arm","speed"]
 starBoostList = ["add/mult","amount","min","max"]
@@ -1801,7 +1801,7 @@ def resetStats():
                 message=message+" "+pitchingList[i-30]+","
             for j in range(index,index+size):
                 player=charList.index(comboList[j].lstrip())
-                if i<0:
+                if i<30:
                     changedStat[player][i]=defaultStat[player][i]
                 else:
                     changedPitching[player][i-30]=defaultPitching[player][i-30]
@@ -1849,7 +1849,7 @@ def resetStatsE():
             else:
                 message=message+" "+pitchingList[i-30]+","
             for j in range(101):
-                if i<0:
+                if i<30:
                     changedStat[j][i]=defaultStat[j][i]
                 else:
                     changedPitching[j][i-30]=defaultPitching[j][i-30]
@@ -3199,7 +3199,7 @@ def loadChanges():
         recapList.configure(state="disabled")
         if message2=="":
             recapList.configure(state="normal")
-            recapList.insert(tk.END,message+"V3 data loaded (chem, stats and traj)")
+            recapList.insert(tk.END,message+"V3 data loaded (chem, stats and traj)\n")
             recapList.configure(state="disabled")
     return
 
@@ -3785,15 +3785,22 @@ def devMode():
         recapList.insert(tk.END, "Dev mode de-activated, edited stats may remain out of safe range\n")
         recapList.configure(state="disabled")
 
-        
+
 #Hitbox functions
 
 def hitboxCheckButton(name):
-    var="sbHitbox"+name
+    var1="sbHitbox"+name
+    var2="hitboxRandMin"+name
+    var3="hitboxRandMax"+name
     if eval("checkHitbox"+name).getvar(eval("checkHitbox"+name).cget("variable"))=="0":
-        eval(var).configure(state="disabled")
+        eval(var1).configure(state="disabled")
+        eval(var2).configure(state="disabled")
+        eval(var3).configure(state="disabled")
     else:
-        eval(var).configure(state="normal")
+        eval(var1).configure(state="normal")
+        if not (hitboxRandLinkScaleVar.get() and name=="1"):
+            eval(var2).configure(state="normal")
+            eval(var3).configure(state="normal")
  
 def computeHitboxValue():
     recapList.configure(state="normal")
@@ -3817,7 +3824,10 @@ def computeHitboxValue():
             e=1
         e=e+err
         if e==0:
-            r=str(round(float(size)*float(s)*0.01,4))
+            if i==9:
+                r=str(max(round(float(size)*float(s)*0.01,4),2.5))
+            else:
+                r=str(round(float(size)*float(s)*0.01,4))
         else:
             r="multiple"
         recap="hitboxRecap"+str(i)
@@ -3967,7 +3977,7 @@ def resetHitboxA():
     group=group.lstrip()+"'"
     if group[-2]!="s":
         group=group+"s"
-    recapList.insert(tk.END,group+" all stats reset\n")
+    recapList.insert(tk.END,group+" all hitbox reset\n")
     recapList.configure(state="disabled")
     hitboxDisplay(0)
 
@@ -4003,6 +4013,120 @@ def resetHitboxAE():
         hitboxDisplay(1)
     else:
         hitboxDisplay(0)
+   
+def randomizeHitboxes():
+    recapList.configure(state="normal")
+    group=cbHitboxPlayer.get()
+    if group=="Pick a character/group":
+        recapList.insert(tk.END, "Pick a character/group\n")
+        recapList.configure(state="disabled")
+        return
+    index=comboList.index(group)
+    size=getGroupSize(index)
+    if size!=1:
+        index = index+1
+    message=""
+    linkScale=hitboxRandLinkScaleVar.get()
+    for i in range(14):
+        if eval("checkHitbox"+str(i)).getvar(eval("checkHitbox"+str(i)).cget("variable"))=="1" and not (i==1 and linkScale):
+            if i<2:
+                mini=float(eval("hitboxRandMin"+str(i)).get())
+                maxi=float(eval("hitboxRandMax"+str(i)).get())
+                r=round(random()*(maxi-mini)+mini,2)
+            else:
+                mini=int(eval("hitboxRandMin"+str(i)).get())
+                maxi=int(eval("hitboxRandMax"+str(i)).get())
+                r=randint(mini,maxi)
+            for j in range(index,index+size):
+                player=charList.index(comboList[j].lstrip())
+                changedSize[player][i]=r
+            if i==0 and linkScale:
+                for j in range(index,index+size):
+                    player=charList.index(comboList[j].lstrip())
+                    changedSize[player][1]=r
+            message=message+" "+sizeList[i]+","
+    if message!="":
+        message=message.rstrip(",")
+        if message.find(",")!=-1:
+            message1=message.rsplit(", ",1)
+            message=message1[0]+" and "+message1[1]
+        group=group.lstrip()+"'"
+        if group[-2]!="s":
+            group=group+"s"
+        recapList.insert(tk.END,group+message+" randomized\n")
+        recapList.configure(state="disabled")
+    hitboxDisplay(0)
+
+def randomizeHitboxesE():
+    recapList.configure(state="normal")
+    message=""
+    linkScale=hitboxRandLinkScaleVar.get()
+    for i in range(14):
+        if eval("checkHitbox"+str(i)).getvar(eval("checkHitbox"+str(i)).cget("variable"))=="1" and not (i==1 and linkScale):
+            for j in range(101):
+                if i<2:
+                   mini=float(eval("hitboxRandMin"+str(i)).get())
+                   maxi=float(eval("hitboxRandMax"+str(i)).get())
+                   r=round(random()*(maxi-mini)+mini,2)
+                else:
+                   mini=int(eval("hitboxRandMin"+str(i)).get())
+                   maxi=int(eval("hitboxRandMax"+str(i)).get())
+                   r=randint(mini,maxi)
+                changedSize[j][i]=r
+                if i==0 and linkScale:
+                    changedSize[j][1]=r
+            message=message+" "+sizeList[i]+","
+    if message!="":
+        message=message.rstrip(",")
+        if message.find(",")!=-1:
+            message1=message.rsplit(", ",1)
+            message=message1[0]+" and "+message1[1]
+        recapList.insert(tk.END,"Everyone"+message+" randomized\n")
+        recapList.configure(state="disabled")
+    hitboxDisplay(0)
+
+def randomizeHitboxesEV():
+    recapList.configure(state="normal")
+    message=""
+    linkScale=hitboxRandLinkScaleVar.get()
+    for i in range(14):
+        if eval("checkHitbox"+str(i)).getvar(eval("checkHitbox"+str(i)).cget("variable"))=="1" and not (i==1 and linkScale):
+            for j in range(48):
+                if j!=47:
+                    group=getGraphGroup(j)
+                else:
+                    group=[]
+                    for g in range(24):
+                        group.append(g+77)
+                if i<2:
+                    mini=float(eval("hitboxRandMin"+str(i)).get())
+                    maxi=float(eval("hitboxRandMax"+str(i)).get())
+                    r=round(random()*(maxi-mini)+mini,2)
+                else:
+                    mini=int(eval("hitboxRandMin"+str(i)).get())
+                    maxi=int(eval("hitboxRandMax"+str(i)).get())
+                    r=randint(mini,maxi)
+                for k in group:
+                    changedSize[k][i]=r
+                if i==0 and linkScale:
+                    for k in group:
+                        changedSize[k][1]=r
+            message=message+" "+sizeList[i]+","
+    if message!="":
+        message=message.rstrip(",")
+        if message.find(",")!=-1:
+            message1=message.rsplit(", ",1)
+            message=message1[0]+" and "+message1[1]
+        recapList.insert(tk.END,"Every variant"+message+" randomized\n")
+        recapList.configure(state="disabled")
+    hitboxDisplay(0)
+
+def randLinkScale():
+    if hitboxRandLinkScaleVar.get():
+        hitboxRandMin1.configure(state="disabled")
+        hitboxRandMax1.configure(state="disabled")
+    else:
+        hitboxCheckButton("1")
 
 #Speed functions
 
@@ -5211,51 +5335,60 @@ wackyDevMode.grid(row=3,column=0)
 #Advanced Stats Tab
 #Hitboxes
 
-hitboxRadiusFrame = tk.LabelFrame(hitboxesFrame, text="Catch Radius")
+hitboxEditFrame = tk.LabelFrame(hitboxesFrame, text="Editor")
+hitboxEditFrame.grid(row=0,column=0,rowspan=21,columnspan=3)
+hitboxEditFrame.columnconfigure(1, weight=1)
+hitboxRandFrame = tk.LabelFrame(hitboxesFrame, text="Randomizer")
+hitboxRandFrame.grid(row=0,column=3,rowspan=17, columnspan=2, sticky=tk.NS)
+hitboxRandFrame.columnconfigure(1, weight=1)
+hitboxRadiusFrame = tk.LabelFrame(hitboxEditFrame, text="Catch Radius")
 hitboxRadiusFrame.grid(row=3, column=0, rowspan=10, columnspan=3, sticky=tk.EW)
 hitboxRadiusFrame.columnconfigure(1, weight=1)
-hitboxHitboxFrame = tk.LabelFrame(hitboxesFrame, text="Hitbox Size")
+hitboxHitboxFrame = tk.LabelFrame(hitboxEditFrame, text="Hitbox Size")
 hitboxHitboxFrame.grid(row=13, column=0, rowspan=2, columnspan=3, sticky=tk.EW)
 hitboxHitboxFrame.columnconfigure(1, weight=1)
+hitboxActionFrame = tk.LabelFrame(hitboxEditFrame, text="Actions")
+hitboxActionFrame.grid(row=15,column=0,rowspan=6, columnspan=2, sticky=tk.EW)
+hitboxActionFrame.columnconfigure(1, weight=1)
 
-hitboxLabelPlayer = tk.Label(hitboxesFrame, text="Player(s) :", anchor=tk.W)
+hitboxLabelPlayer = tk.Label(hitboxEditFrame, text="Player(s) :", anchor=tk.W)
 hitboxLabelPlayer.grid(row=0,column=0,sticky=tk.EW)
-checkHitbox1 = tk.Checkbutton(hitboxesFrame, text="Size scale (Menus) :", anchor=tk.W, command=partial(hitboxCheckButton,"1"))
+checkHitbox1 = tk.Checkbutton(hitboxEditFrame, text="Size scale (Menus) :", anchor=tk.W, command=partial(hitboxCheckButton,"1"))
 checkHitbox1.grid(row=1,column=0,sticky=tk.EW)
-checkHitbox0 = tk.Checkbutton(hitboxesFrame, text="Size scale (Gameplay) :", anchor=tk.W, command=partial(hitboxCheckButton,"0"))
+checkHitbox0 = tk.Checkbutton(hitboxEditFrame, text="Size scale (Gameplay) :", anchor=tk.W, command=partial(hitboxCheckButton,"0"))
 checkHitbox0.grid(row=2,column=0,sticky=tk.EW)
 checkHitbox2 = tk.Checkbutton(hitboxRadiusFrame, text="Regular :", anchor=tk.W, command=partial(hitboxCheckButton,"2"))
 checkHitbox2.grid(row=0,column=0,sticky=tk.EW)
 checkHitbox3 = tk.Checkbutton(hitboxRadiusFrame, text="Facing away :", anchor=tk.W, command=partial(hitboxCheckButton,"3"))
 checkHitbox3.grid(row=1,column=0,sticky=tk.EW)
-checkHitbox4 = tk.Checkbutton(hitboxRadiusFrame, text="???", anchor=tk.W, command=partial(hitboxCheckButton,"4"))
+checkHitbox4 = tk.Checkbutton(hitboxRadiusFrame, text="Safer catch", anchor=tk.W, command=partial(hitboxCheckButton,"4"))
 checkHitbox4.grid(row=2,column=0,sticky=tk.EW)
 checkHitbox5 = tk.Checkbutton(hitboxRadiusFrame, text="Height :", anchor=tk.W, command=partial(hitboxCheckButton,"5"))
 checkHitbox5.grid(row=3,column=0,sticky=tk.EW)
-checkHitbox6 = tk.Checkbutton(hitboxRadiusFrame, text="???", anchor=tk.W, command=partial(hitboxCheckButton,"6"))
+checkHitbox6 = tk.Checkbutton(hitboxRadiusFrame, text="Reach up threshold", anchor=tk.W, command=partial(hitboxCheckButton,"6"))
 checkHitbox6.grid(row=4,column=0,sticky=tk.EW)
-checkHitbox7 = tk.Checkbutton(hitboxRadiusFrame, text="???", anchor=tk.W, command=partial(hitboxCheckButton,"7"))
+checkHitbox7 = tk.Checkbutton(hitboxRadiusFrame, text="??? (height)", anchor=tk.W, command=partial(hitboxCheckButton,"7"))
 checkHitbox7.grid(row=5,column=0,sticky=tk.EW)
 checkHitbox8 = tk.Checkbutton(hitboxRadiusFrame, text="Dive :", anchor=tk.W, command=partial(hitboxCheckButton,"8"))
 checkHitbox8.grid(row=6,column=0,sticky=tk.EW)
-checkHitbox9 = tk.Checkbutton(hitboxRadiusFrame, text="???", anchor=tk.W, command=partial(hitboxCheckButton,"9"))
+checkHitbox9 = tk.Checkbutton(hitboxRadiusFrame, text="Line drive dive height", anchor=tk.W, command=partial(hitboxCheckButton,"9"))
 checkHitbox9.grid(row=7,column=0,sticky=tk.EW)
 checkHitbox10 = tk.Checkbutton(hitboxRadiusFrame, text="Jump :", anchor=tk.W, command=partial(hitboxCheckButton,"10"))
 checkHitbox10.grid(row=8,column=0,sticky=tk.EW)
-checkHitbox11 = tk.Checkbutton(hitboxRadiusFrame, text="???", anchor=tk.W, command=partial(hitboxCheckButton,"11"))
+checkHitbox11 = tk.Checkbutton(hitboxRadiusFrame, text="??? (regular)", anchor=tk.W, command=partial(hitboxCheckButton,"11"))
 checkHitbox11.grid(row=9,column=0,sticky=tk.EW)
 checkHitbox12 = tk.Checkbutton(hitboxHitboxFrame, text="Width :", anchor=tk.W, command=partial(hitboxCheckButton,"12"))
 checkHitbox12.grid(row=0,column=0,sticky=tk.EW)
 checkHitbox13 = tk.Checkbutton(hitboxHitboxFrame, text="Height :", anchor=tk.W, command=partial(hitboxCheckButton,"13"))
 checkHitbox13.grid(row=1,column=0,sticky=tk.EW)
 
-cbHitboxPlayer = ttk.Combobox(hitboxesFrame, width=25, values=comboList, state="readonly")
+cbHitboxPlayer = ttk.Combobox(hitboxEditFrame, width=25, values=comboList, state="readonly")
 cbHitboxPlayer.set("Pick a character/group")
 cbHitboxPlayer.grid(row=0,column=1)
 cbHitboxPlayer.bind('<<ComboboxSelected>>', hitboxPlayerChange)
-sbHitbox1 = ttk.Spinbox(hitboxesFrame, from_='-inf', to='inf', increment=0.01, state="disabled")
+sbHitbox1 = ttk.Spinbox(hitboxEditFrame, from_='-inf', to='inf', increment=0.01, state="disabled")
 sbHitbox1.grid(row=1,column=1, sticky=tk.E)
-sbHitbox0 = ttk.Spinbox(hitboxesFrame, from_='-inf', to='inf', increment=0.01, state="disabled")
+sbHitbox0 = ttk.Spinbox(hitboxEditFrame, from_='-inf', to='inf', increment=0.01, state="disabled")
 sbHitbox0.grid(row=2,column=1, sticky=tk.E)
 sbHitbox2 = ttk.Spinbox(hitboxRadiusFrame, from_='-inf', to='inf', state="disabled")
 sbHitbox2.grid(row=0,column=1, sticky=tk.E)
@@ -5282,7 +5415,7 @@ sbHitbox12.grid(row=0,column=1, sticky=tk.E)
 sbHitbox13 = ttk.Spinbox(hitboxHitboxFrame, from_='-inf', to='inf', state="disabled")
 sbHitbox13.grid(row=1,column=1, sticky=tk.E)
 
-hitboxCompute = tk.Button(hitboxesFrame, text="Final Value :", command=computeHitboxValue)
+hitboxCompute = tk.Button(hitboxEditFrame, text="Final Value :", command=computeHitboxValue)
 hitboxCompute.grid(row=2,column=2, padx = 18)
 hitboxRecap2 = tk.Text(hitboxRadiusFrame, height = 1, width = 10, state="disable")
 hitboxRecap2.grid(row=0,column=2, padx = 10)
@@ -5309,8 +5442,6 @@ hitboxRecap12.grid(row=0,column=2, padx = 10)
 hitboxRecap13 = tk.Text(hitboxHitboxFrame, height = 1, width = 10, state="disable")
 hitboxRecap13.grid(row=1,column=2)
 
-hitboxActionFrame = tk.LabelFrame(hitboxesFrame, text="Actions")
-hitboxActionFrame.grid(row=0,column=3,rowspan=6,padx=20)
 hitboxChange = tk.Button(hitboxActionFrame, text="Change Hitboxes", command=changeHitbox)
 hitboxChange.pack(pady=2)
 hitboxChangeE = tk.Button(hitboxActionFrame, text="Change Hitboxes for everyone", command=changeHitboxE)
@@ -5324,7 +5455,107 @@ hitboxResetEveryone.pack(pady=(5,0))
 hitboxAllResetEveryone = tk.Button(hitboxActionFrame, text="Reset All Hitboxes for everyone", command=resetHitboxAE)
 hitboxAllResetEveryone.pack(pady=(0,5))
 
+hitboxRandMinLabel = tk.Label(hitboxRandFrame, text="Min :")
+hitboxRandMinLabel.grid(row=0,column=0,padx=3)
+hitboxRandMaxLabel = tk.Label(hitboxRandFrame, text="Max :")
+hitboxRandMaxLabel.grid(row=0,column=1,padx=3)
+hitboxRandMin1 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", increment=0.01, state="disabled")
+hitboxRandMin1.grid(row=1,column=0,pady=(2,0))
+hitboxRandMin1.set(0.9)
+hitboxRandMax1 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", increment=0.01, state="disabled")
+hitboxRandMax1.grid(row=1,column=1,pady=(2,0))
+hitboxRandMax1.set(1.7)
+hitboxRandMin0 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", increment=0.01, state="disabled")
+hitboxRandMin0.grid(row=2,column=0,pady=(5,0))
+hitboxRandMin0.set(0.75)
+hitboxRandMax0 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", increment=0.01, state="disabled")
+hitboxRandMax0.grid(row=2,column=1,pady=(5,0))
+hitboxRandMax0.set(1.7)
+hitboxRandMin2 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin2.grid(row=3,column=0,pady=(25,0))
+hitboxRandMin2.set(117)
+hitboxRandMax2 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax2.grid(row=3,column=1,pady=(25,0))
+hitboxRandMax2.set(270)
+hitboxRandMin3 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin3.grid(row=4,column=0,pady=(5,0))
+hitboxRandMin3.set(40)
+hitboxRandMax3 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax3.grid(row=4,column=1,pady=(5,0))
+hitboxRandMax3.set(180)
+hitboxRandMin4 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin4.grid(row=5,column=0,pady=(5,0))
+hitboxRandMin4.set(30)
+hitboxRandMax4 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax4.grid(row=5,column=1,pady=(5,0))
+hitboxRandMax4.set(170)
+hitboxRandMin5 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin5.grid(row=6,column=0,pady=(5,0))
+hitboxRandMin5.set(165)
+hitboxRandMax5 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax5.grid(row=6,column=1,pady=(5,0))
+hitboxRandMax5.set(435)
+hitboxRandMin6 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin6.grid(row=7,column=0,pady=(5,0))
+hitboxRandMin6.set(42)
+hitboxRandMax6 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax6.grid(row=7,column=1,pady=(5,0))
+hitboxRandMax6.set(180)
+hitboxRandMin7 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin7.grid(row=8,column=0,pady=(5,0))
+hitboxRandMin7.set(220)
+hitboxRandMax7 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax7.grid(row=8,column=1,pady=(5,0))
+hitboxRandMax7.set(490)
+hitboxRandMin8 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin8.grid(row=9,column=0,pady=(5,0))
+hitboxRandMin8.set(140)
+hitboxRandMax8 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax8.grid(row=9,column=1,pady=(5,0))
+hitboxRandMax8.set(440)
+hitboxRandMin9 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin9.grid(row=10,column=0,pady=(5,0))
+hitboxRandMin9.set(30)
+hitboxRandMax9 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax9.grid(row=10,column=1,pady=(5,0))
+hitboxRandMax9.set(320)
+hitboxRandMin10 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin10.grid(row=11,column=0,pady=(5,0))
+hitboxRandMin10.set(40)
+hitboxRandMax10 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax10.grid(row=11,column=1,pady=(5,0))
+hitboxRandMax10.set(180)
+hitboxRandMin11 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin11.grid(row=12,column=0,pady=(5,0))
+hitboxRandMin11.set(140)
+hitboxRandMax11 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax11.grid(row=12,column=1,pady=(5,0))
+hitboxRandMax11.set(290)
+hitboxRandMin12 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin12.grid(row=13,column=0,pady=(22,0))
+hitboxRandMin12.set(18)
+hitboxRandMax12 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax12.grid(row=13,column=1,pady=(22,0))
+hitboxRandMax12.set(179)
+hitboxRandMin13 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMin13.grid(row=14,column=0,pady=(5,0))
+hitboxRandMin13.set(120)
+hitboxRandMax13 = ttk.Spinbox(hitboxRandFrame, from_="-inf", to="inf", state="disabled")
+hitboxRandMax13.grid(row=14,column=1,pady=(5,0))
+hitboxRandMax13.set(390)
+
+hitboxRandRandOne = tk.Button(hitboxRandFrame, text="Randomize Hitboxes", command=randomizeHitboxes)
+hitboxRandRandOne.grid(row=15,column=0,columnspan=2,pady=(10,0))
+hitboxRandRandAll = tk.Button(hitboxRandFrame, text="Randomize Hitboxes for everyone", command=randomizeHitboxesE)
+hitboxRandRandAll.grid(row=16,column=0,columnspan=2)
+hitboxRandRandAllVariant = tk.Button(hitboxRandFrame, text="Randomize Hitboxes for every variant", command=randomizeHitboxesEV)
+hitboxRandRandAllVariant.grid(row=17,column=0,columnspan=2)
+hitboxRandLinkScaleVar = tk.IntVar()
+hitboxRandLinkScale = tk.Checkbutton(hitboxRandFrame, text="Link menu scale to gameplay scale",variable=hitboxRandLinkScaleVar, command=randLinkScale)
+hitboxRandLinkScale.grid(row=18,column=0,columnspan=2)
+
 #Speeds
+
 speedTableFrame = tk.Frame(speedsFrame)
 speedTableFrame.grid(row=1,column=0, rowspan=23, columnspan=6)
 
@@ -6098,7 +6329,7 @@ credits8 = tk.Label(creditsFrame, text="Everyone else I'm forgetting :)")
 credits8.pack(pady=10)
 
 
-root.title("Sluggers stats editor v3")
+root.title("Sluggers stats editor v4")
 root.lift()
 root.attributes('-topmost', True)
 root.attributes('-topmost', False)
