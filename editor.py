@@ -943,10 +943,14 @@ def currentChem():
 
 def dirChange():
     chemText.configure(text="to")
+    chemGlobalButtonCE.configure(text="Top choice to Everyone")
+    chemGlobalButtonEC.configure(state="normal")
     chemColor()
 
 def dirReset():
     chemText.configure(text="with")
+    chemGlobalButtonCE.configure(text="Top choice with Everyone")
+    chemGlobalButtonEC.configure(state="disable")
     chemColor()
 
 def chemColor(*args):
@@ -1044,7 +1048,7 @@ def changeChem():
     recapList.tag_config("lasttext"+nlines,foreground=color)
     recapList.configure(state="disabled")
     
-def globalChem():
+def globalChemEE():
     global changedChem
     recapList.configure(state="normal")
     choice=chemResetVar.get()
@@ -1083,6 +1087,100 @@ def globalChem():
         recapList.insert(tk.END, "Every chemistry"+message+"set to good\n")
     recapList.configure(state="disabled")
     chemColor()
+    
+def globalChemCE():
+    global changedChem
+    recapList.configure(state="normal")
+    if directionVar.get()==0:
+        recapList.insert(tk.END, "No direction set\n")
+        recapList.configure(state="disabled")
+        return
+    direction=directionVar.get()
+    start=chemFrom.get()
+    if start=="Pick a character/group":
+        recapList.insert(tk.END, "Pick a character/group\n")
+        recapList.configure(state="disabled")
+        return
+    startIndex=comboList.index(start)
+    startGroupSize=getGroupSize(startIndex)
+    if startGroupSize!=1:
+        startIndex = startIndex+1
+    choice=chemResetVar.get()
+    if choice==0:
+        recapList.insert(tk.END, "No global option selected\n")
+        recapList.configure(state="disabled")
+        return
+
+    miis=chemGlobalMiiVar.get()
+    n=77
+    message=" (except miis) "
+    if miis:
+        n=101
+        message=" "    
+    for i in range(startIndex,startIndex+startGroupSize):
+        istartIndex=charList.index(comboList[i].lstrip())
+        for j in range(n):
+            if choice==1:
+                changedChem[istartIndex][j]=defaultChem[istartIndex][j]
+                if direction==2:
+                    changedChem[j][istartIndex]=defaultChem[j][istartIndex]
+            else:
+                simpleChemChange(istartIndex,j,choice-2,direction)
+    chemColor()
+    if directionVar.get()==1:
+        direction=" to "
+    else:
+        direction=" with "  
+    if choice==1:
+        recapList.insert(tk.END, start+" chemistry"+direction+"everyone"+message+"reverted to default\n")
+    if choice==2:
+        recapList.insert(tk.END, start+" chemistry"+direction+"everyone"+message+"set to bad\n")
+    if choice==3:
+        recapList.insert(tk.END, start+" chemistry"+direction+"everyone"+message+"set to neutral\n")
+    if choice==4:
+        recapList.insert(tk.END, start+" chemistry"+direction+"everyone"+message+"set to good\n")
+    recapList.configure(state="disabled")
+
+def globalChemEC():
+    global changedChem
+    recapList.configure(state="normal")
+    start=chemFrom.get()
+    if start=="Pick a character/group":
+        recapList.insert(tk.END, "Pick a character/group\n")
+        recapList.configure(state="disabled")
+        return
+    startIndex=comboList.index(start)
+    startGroupSize=getGroupSize(startIndex)
+    if startGroupSize!=1:
+        startIndex = startIndex+1
+    choice=chemResetVar.get()
+    if choice==0:
+        recapList.insert(tk.END, "No global option selected\n")
+        recapList.configure(state="disabled")
+        return
+    miis=chemGlobalMiiVar.get()
+    n=77
+    message=" (except miis) "
+    if miis:
+        n=101
+        message=" "    
+    for i in range(startIndex,startIndex+startGroupSize):
+        istartIndex=charList.index(comboList[i].lstrip())
+        for j in range(n):
+            if choice==1:
+                changedChem[j][istartIndex]=defaultChem[j][istartIndex]
+            else:
+                simpleChemChange(j,istartIndex,choice-2,1)
+    chemColor()
+    if choice==1:
+        recapList.insert(tk.END, "Everyone"+message+" chemistry to "+start+" reverted to default\n")
+    if choice==2:
+        recapList.insert(tk.END, "Everyone"+message+" chemistry to "+start+" set to bad\n")
+    if choice==3:
+        recapList.insert(tk.END, "Everyone"+message+" chemistry to "+start+" set to neutral\n")
+    if choice==4:
+        recapList.insert(tk.END, "Everyone"+message+" chemistry to "+start+" set to good\n")
+    recapList.configure(state="disabled")
     
 def autoChem():
     for i in range(101):
@@ -4580,7 +4678,7 @@ chemChangeFrame.grid(row=2,column=0,padx=10)
 chemFrom = ttk.Combobox(chemChangeFrame, width=25, values= comboList, state="readonly")
 chemFrom.set("Pick a character/group")
 chemFrom.pack(padx = 3, pady = (8,3))
-chemText = tk.Label(chemChangeFrame, text="with")
+chemText = tk.Label(chemChangeFrame, text="to/with")
 chemText.pack()
 chemTo = ttk.Combobox(chemChangeFrame, width=25, values= comboList, state="readonly")
 chemTo.set("Pick a character/group")
@@ -4605,8 +4703,12 @@ chemNeutral = tk.Radiobutton(chemGlobalFrame, text="All neutral chem", variable=
 chemNeutral.pack(anchor=tk.W)
 chemGood = tk.Radiobutton(chemGlobalFrame, text="All good chem", variable=chemResetVar, value=4)
 chemGood.pack(anchor=tk.W)
-chemGlobalButton = tk.Button(chemGlobalFrame, text="Apply Global Change", command= globalChem)
-chemGlobalButton.pack(padx=5,pady=5)
+chemGlobalButtonEE = tk.Button(chemGlobalFrame, text="Everyone with Everyone", command= globalChemEE)
+chemGlobalButtonEE.pack(padx=5,pady=(5,0))
+chemGlobalButtonCE = tk.Button(chemGlobalFrame, text="Top choice to/with Everyone", command= globalChemCE)
+chemGlobalButtonCE.pack(padx=5,pady=2)
+chemGlobalButtonEC = tk.Button(chemGlobalFrame, text="Everyone to Top choice",state="disabled", command= globalChemEC)
+chemGlobalButtonEC.pack(padx=5)
 
 chemExtraButtons = tk.LabelFrame(chemistryFrame, text="Extra Options")
 chemExtraButtons.grid(row=2, column=1)
