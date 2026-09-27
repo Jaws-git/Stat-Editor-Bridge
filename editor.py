@@ -3883,7 +3883,6 @@ def devMode():
         recapList.insert(tk.END, "Dev mode de-activated, edited stats may remain out of safe range\n")
         recapList.configure(state="disabled")
 
-
 #Hitbox functions
 
 def hitboxCheckButton(name):
