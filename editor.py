@@ -2904,11 +2904,14 @@ def geckoGenerate(listPlayers,exclude):
     Lv = resetCount(6483572,Lv.copy())
     
     for i in range(16):#star boost
-        for j in range(2):
-            stat=float2Hex(changedStarBoost[i][j])
-            default=float2Hex(defaultStarBoost[i][j])
-            for n in range(4):
-                Lv = advanceCount(stat[n*2:n*2+2], default[n*2:n*2+2], baseStarBoost+i*12+j*4+n, Lv.copy(),1)
+        stat=float2Hex(changedStarBoost[i][0])
+        default=float2Hex(defaultStarBoost[i][0])
+        for n in range(4):
+            Lv = advanceCount(stat[n*2:n*2+2], default[n*2:n*2+2], baseStarBoost+i*12+n, Lv.copy(),1)
+        stat=int2Hex(changedStarBoost[i][0]).zfill(8)
+        default=int2Hex(defaultStarBoost[i][0]).zfill(8)
+        for n in range(4):
+            Lv = advanceCount(stat[n*2:n*2+2], default[n*2:n*2+2], baseStarBoost+i*12+4+n, Lv.copy(),1)
         for j in range(2,4):
             stat=int2Hex(changedStarBoost[i][j])
             default=int2Hex(defaultStarBoost[i][j])
@@ -3562,18 +3565,18 @@ def simpleCodeLoad(address,code):
         changedSize[q][qr]=hex2Float(s)
         
     elif address>=starbooststart and address<=starboostend:
-        q=(address-sizescalestart)//12
-        r=(address-sizescalestart)%12
+        q=(address-starbooststart)//12
+        r=(address-starbooststart)%12
         if r==3:
-            changedStarBoost[q][0]==code
+            changedStarBoost[q][0]=code
         elif r in range(4,8):
             s=float2Hex(changedStarBoost[q][1])
             s=s[0:2*(r-4)]+hex(code).lstrip("0x").zfill(2)+s[2*(r-4)+2:]
             changedStarBoost[q][1]=hex2Float(s)
         elif r>7:
-            s=int2Hex(changedStarsTeam[q][r//2-2])
+            s=int2Hex(changedStarBoost[q][r//2-2])
             s=s[0:2*(r%2)]+hex(code).lstrip("0x").zfill(2)+s[2*(r%2)+2:]
-            changedStarsTeam[q][r//2-2]=hex2Int(s)
+            changedStarBoost[q][r//2-2]=hex2Int(s)
     
     elif address>=statstart and address<=statend:
         q=(address-statstart)//142
